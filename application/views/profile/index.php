@@ -8,8 +8,8 @@
 	</a><br />
 	<?= $view->tpl_follow; ?>
 	
-	<?= Library_i18n::get('profile.index.follows'); ?>
+	<?= Library_i18n::get('profile.index.follows'); ?><br />
 	<?php foreach($view->user_follows as $key=>$followed): ?>
-		<?= '<br /><img src="' . $followed->getAvatarURL() . '" alt="' . $followed->prop('username') . '" /><b>' . $followed->prop('username') . '</b> '?>
+		<?= '<a href="' . $followed->getId() . '"><img width="40px" height="40px" src="' . $followed->getAvatarURL() . '" alt="' . $followed->prop('username') . '" title="' . $followed->prop('username') . '" alt="' . $followed->prop('username') . '" /></a> '?>
 	<?php endforeach; ?>
 </p>
