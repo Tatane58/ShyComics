@@ -802,6 +802,8 @@ abstract class Entity implements iEntity
 			$id_name		=	$className::getIdName();
 			$sql_request	=	null;
 			$foreignSQL		=	array();
+            
+            $list = array_values($list);
 
 			foreach($list as $instance)
 			{
