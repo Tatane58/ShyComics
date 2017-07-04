@@ -20,7 +20,7 @@
 		{
 			return [
 				'user' => 'Model_Users',
-				'content' => 'VARCHAR(255)',
+				'content' => 'TEXT',
 				'file' => 'Model_Files',
 			];
 		}
@@ -40,6 +40,7 @@
 			$request = Model_Comments::createRequest();
 			$results = $request->select('*')
 							   ->getOnly($number)
+                               ->orderBy('id DESC')
 							   ->exec();
 			
 			return $results;

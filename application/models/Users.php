@@ -15,7 +15,7 @@
 		protected $follows;
 		protected $locales_comics;
 		
-		const	DEFAULT_USERS_GROUP_ID		=	1,
+		const	DEFAULT_USERS_GROUP_ID		=	2,
 				DEFAULT_LOCALE_WEBSITE_ID	=	1,
 
 				LIKE_SUCCESS				=	1,
@@ -60,7 +60,7 @@
 		public static function __structure()
 		{
 			return [
-				'username' => 'VARCHAR(255)',
+				'username' => 'VARCHAR(20)',
 				'email' => 'VARCHAR(254)',
 				'is_email_verified' => 'BOOLEAN',
 				'is_banned' => 'BOOLEAN',
@@ -241,6 +241,12 @@
 			$file->load('user');
 
 			Model_Files::update($file);
+			
+			//Not forget to update the feed for followers
+			$feeds = Model_Feed::getGalleryFeed($this->getId(), $file->getId(), Model_Feed::OBJECT_IS_A_LIKED_FILE);
+            
+            foreach($feeds as $feed)
+					Model_Feed::delete($feed);
 
 			return self::UNLIKE_SUCCESS;
 		}
@@ -298,6 +304,34 @@
 			Model_Users::update($this);
 			
 			return self::PROCESS_OK;
+		}
+		
+		public function updatePassword($pass_actual, $pass_new, $pass_confirm)
+		{
+			$pass_actual = Library_String::hash(trim($pass_actual));
+			$pass_new = trim($pass_new);
+			$pass_confirm = trim($pass_confirm);
+            
+            if($pass_confirm !== $pass_new || $pass_actual !== $this->prop('password'))
+            {
+				return self::ERROR_SAVE;
+            }
+            elseif( ! empty($pass_new) && ! empty($pass_confirm))
+            {
+                $this->prop('password', Library_String::hash($pass_new));
+                
+                $this->load('user_group');
+                $this->load('locale_website');
+                $this->load('locales_comics');
+                $this->load('follows');
+                Model_Users::update($this);
+                
+                $subject = Library_i18n::get('profile.modify.pass.mail_confirm.subject');
+				$mail_content = Library_i18n::get('profile.modify.pass.mail_confirm.message', ['password' => $pass_new]);
+				Library_Email::sendFromShyComics($this->prop('email'), $subject, $mail_content);
+                
+                return self::PROCESS_OK;
+			}
 		}
 
 		public function isFollowedByUser(Model_Users $user)
@@ -362,7 +396,7 @@
 				$arrayFollows[] = $follow->getId();
 			}
 
-			$follows = implode(',', $arrayFollows);
+			$follows = implode("', '", $arrayFollows);
 
 			$results = \EntityPHP\EntityRequest::executeSQL("
 				SELECT f.*, u.username
@@ -370,7 +404,7 @@
 				LEFT JOIN users u ON f.id_author=u.id
 				WHERE f.id_author IN ('" . $follows . "')
 				ORDER BY f.id DESC
-				LIMIT 0,20
+				LIMIT 0,50
 			");
 
 			return is_array($results)?$results:null;
